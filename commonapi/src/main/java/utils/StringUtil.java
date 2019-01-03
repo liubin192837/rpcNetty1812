@@ -1,5 +1,7 @@
 package utils;
 
+import java.util.UUID;
+
 public class StringUtil {
     public static boolean isEmpty(String str) {
         if (str != null) {
@@ -9,5 +11,10 @@ public class StringUtil {
             return true;
         }
         return false;
+    }
+
+    public static String getUiid(){
+        String uuid = UUID.randomUUID().toString().replace("-", "").toLowerCase();
+        return uuid;
     }
 }
