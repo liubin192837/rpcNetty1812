@@ -3,14 +3,17 @@ package clientCommon;
 import annotations.ServiceName;
 import modes.Constants;
 import modes.RequestRpc;
+import utils.StringUtil;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.UUID;
 
 public class ProxyHelperTool {
+    public volatile static ClientHelper client;
     public ProxyHelperTool() {
-
+        client = ClientHelper.getClientHelper();
     }
     public <T> T create(final Class<?> interfaceClass) {
         return (T) Proxy.newProxyInstance(
@@ -27,13 +30,14 @@ public class ProxyHelperTool {
                         requestRpc.setServiceName(method.getDeclaringClass().getAnnotation(ServiceName.class).name());
                         requestRpc.setParameters(args);
                         requestRpc.setParameterTypes(method.getParameterTypes());
-
-                        ClientHelper client = new ClientHelper(Constants.HOST, Constants.PORT);
-                        String response = client.send(requestRpc);
-                        if (response == null) {
-                            throw new RuntimeException("response is null");
+                        requestRpc.setRequestId(StringUtil.getUiid());
+                        ClientHandler.waitingRPC.put(requestRpc.getRequestId(),requestRpc);
+                        ProxyHelperTool.client.send(requestRpc);
+                        synchronized(requestRpc){
+                            requestRpc.wait();
                         }
-                        return response;
+                        //System.out.println(requestRpc.getResult());
+                        return requestRpc.getResult();
                     }
                 }
         );

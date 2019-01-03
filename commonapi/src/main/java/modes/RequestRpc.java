@@ -5,9 +5,22 @@ public class RequestRpc {
     private String serviceName;
     private String methodName;
     private Class<?>[] parameterTypes;
+    private Object result;
 
     public String getRequestId() {
         return requestId;
+    }
+
+    public Object getResult() {
+        return result;
+    }
+
+    public void setResult(Object result) {
+        synchronized(this){
+            this.result = result;
+            notify();
+        }
+
     }
 
     public void setRequestId(String requestId) {
