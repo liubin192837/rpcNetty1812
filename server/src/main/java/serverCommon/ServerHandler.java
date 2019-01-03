@@ -15,18 +15,17 @@ import java.lang.reflect.Method;
 public class ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("ChannelInboundHandlerAdapter--channelActive");
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("ChannelInboundHandlerAdapter----channelInactive");
         ctx.fireChannelInactive();
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        System.out.println("Name:"+Thread.currentThread().getName());
         ServerService.submit(new Runnable() {
             @Override
             public void run() {

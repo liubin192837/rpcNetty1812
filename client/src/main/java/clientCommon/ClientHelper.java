@@ -46,44 +46,6 @@ public class ClientHelper {
         return result;
     }
 
-    public String send2(RequestRpc requestRpc) {
-        if (host == null || port == -1) {
-            return "host or port can't  null";
-        }
-        EventLoopGroup group = new NioEventLoopGroup();
-        try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group);
-            bootstrap.channel(NioSocketChannel.class);
-            bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel channel) throws Exception {
-                    ChannelPipeline pipeline = channel.pipeline();
-                    pipeline.addLast(new RpcEncoder());
-                    pipeline.addLast(new RpcDecoder(ResponseRpc.class));
-                    pipeline.addLast(clientHandler);
-                }
-            });
-            bootstrap.option(ChannelOption.TCP_NODELAY, true);
-
-            ChannelFuture future = bootstrap.connect(host, port).sync();
-
-            Channel channel = future.channel();
-            channel.writeAndFlush(requestRpc).sync();
-            System.out.println("result 1:" + result);
-            if (null == result) {
-                channel.closeFuture().sync();
-            }
-
-            System.out.println("result 2:" + result);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            group.shutdownGracefully();
-        }
-        return result;
-    }
-
     private void initConnect() {
         System.out.println("initConnect");
         if (host == null || port == -1) {
@@ -115,10 +77,6 @@ public class ClientHelper {
     }
 
     public void close() {
-    /*    System.out.println("close:"+(clientHandler != null));
-        if (clientHandler != null) {
-            clientHandler.close();
-        }*/
         if(group!=null){
             group.shutdownGracefully();
         }
