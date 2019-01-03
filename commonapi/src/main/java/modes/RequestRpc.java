@@ -1,7 +1,7 @@
 package modes;
 
 public class RequestRpc {
-    private String requestId;
+    private String requestId = "1213";
     private String serviceName;
     private String methodName;
     private Class<?>[] parameterTypes;
