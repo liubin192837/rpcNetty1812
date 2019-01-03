@@ -1,43 +1,43 @@
 package clientCommon;
 
 import annotations.ServiceName;
-import clientCommon.ClientHelper;
 import modes.Constants;
-import modes.MsgClient;
+import modes.RequestRpc;
 import utils.StringUtil;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.UUID;
 
 public class ProxyHelperTool {
-
-
+    public volatile static ClientHelper client;
     public ProxyHelperTool() {
-
+        client = ClientHelper.getClientHelper();
     }
-
     public <T> T create(final Class<?> interfaceClass) {
         return (T) Proxy.newProxyInstance(
                 interfaceClass.getClassLoader(),
                 new Class<?>[]{interfaceClass},
                 new InvocationHandler() {
-                    @Override
+                    //@Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        MsgClient msgClient = new MsgClient();
-                        if(method.getDeclaringClass().getAnnotation(ServiceName.class) == null){
+                        if (method.getDeclaringClass().getAnnotation(ServiceName.class) == null) {
                             throw new RuntimeException("Annotation(ServiceName) is null.");
                         }
-                        msgClient.setServiceName(method.getDeclaringClass().getAnnotation(ServiceName.class).name());
-                        msgClient.setMethodName(method.getName());
-                        msgClient.setParameter(args[0].toString());
-                        ClientHelper client = new ClientHelper(Constants.HOST, Constants.PORT);
-                        long time = System.currentTimeMillis();
-                        String response = client.send(msgClient.toString());
-                        if (response == null) {
-                            throw new RuntimeException("response is null");
+                        RequestRpc requestRpc = new RequestRpc();
+                        requestRpc.setMethodName(method.getName());
+                        requestRpc.setServiceName(method.getDeclaringClass().getAnnotation(ServiceName.class).name());
+                        requestRpc.setParameters(args);
+                        requestRpc.setParameterTypes(method.getParameterTypes());
+                        requestRpc.setRequestId(StringUtil.getUiid());
+                        ClientHandler.waitingRPC.put(requestRpc.getRequestId(),requestRpc);
+                        ProxyHelperTool.client.send(requestRpc);
+                        synchronized(requestRpc){
+                            requestRpc.wait();
                         }
-                        return response;
+                        //System.out.println(requestRpc.getResult());
+                        return requestRpc.getResult();
                     }
                 }
         );

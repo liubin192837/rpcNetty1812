@@ -7,6 +7,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 import modes.RequestRpc;
 import modes.ResponseRpc;
+import service.MsgService;
+import utils.GetServiceNameHelper;
+
+import java.lang.reflect.Method;
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
@@ -23,23 +27,22 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        RequestRpc requestRpc = (RequestRpc)msg;
-        System.out.println("ChannelInboundHandlerAdapter:"+requestRpc.getMethodName());
-        ResponseRpc responseRpc = new ResponseRpc();
-        responseRpc.setResult("Server: I get you");
-        ctx.writeAndFlush(responseRpc).addListener(new ChannelFutureListener() {
+        ServerService.submit(new Runnable() {
             @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                System.out.println("operationComplete");
+            public void run() {
+                RequestRpc requestRpc = (RequestRpc)msg;
+                ResponseRpc responseRpc = handle(requestRpc);
+                responseRpc.setRequestId(requestRpc.getRequestId());
+                ctx.writeAndFlush(responseRpc).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        System.out.println("Server operationComplete");
+                    }
+                });
             }
         });
-        /*.addListener(ChannelFutureListener.CLOSE)*/
-        //ReferenceCountUtil.release(msg);
 
-/*        RequestRpc requestRpc = (RequestRpc)msg;
-        System.out.println("ChannelInboundHandlerAdapter:"+requestRpc.getMethodName());
-        ResponseRpc responseRpc = new ResponseRpc();
-        responseRpc.setResult("Server: I get you");*/
+        /*.addListener(ChannelFutureListener.CLOSE)*/
     }
 
     @Override
@@ -53,4 +56,28 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println("ChannelInboundHandlerAdapter-----channelWritabilityChanged");
         //ctx.fireChannelWritabilityChanged();
     }
+
+    private ResponseRpc handle(RequestRpc requestRpc){
+        ResponseRpc responseRpc = new ResponseRpc();
+        Object object = ServerService.getService(requestRpc.getServiceName());
+        if(object == null){
+            responseRpc.setException(new RuntimeException("Not service:"+requestRpc.
+                    getServiceName()));
+            return responseRpc;
+        }
+
+        try {
+            Class<?> serviceClass = object.getClass();
+            Method method = serviceClass.getMethod(requestRpc.getMethodName(),
+                    requestRpc.getParameterTypes());
+            method.setAccessible(true);
+            Object[] parameters = requestRpc.getParameters();
+            responseRpc.setResult(method.invoke(object, parameters));
+        } catch (Exception e){
+            responseRpc.setResult(e);
+        }
+        return responseRpc;
+    }
+
+
 }
