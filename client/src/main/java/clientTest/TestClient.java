@@ -20,7 +20,7 @@ public class TestClient {
                     //服务端服务 组合收到的字符 再次发回来。通过对比，可见各个线程收到的是否是自己发送的。
                     MsgService msgService = proxyHelperTool.create(MsgService.class);
                     String reslut = msgService.send(Thread.currentThread().getName());
-                    System.out.println("Client("+Thread.currentThread().getName()+") get mag"+ii+":" + "\n" + "..." + reslut);
+                    System.out.println("Client("+Thread.currentThread().getName()+") get mag:" + "\n" + "..." + reslut);
                     countDownLatch.countDown();
                 }
             }.start();

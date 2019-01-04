@@ -36,7 +36,9 @@ public class ProxyHelperTool {
                         synchronized(requestRpc){
                             requestRpc.wait();
                         }
-                        return requestRpc.getResult();
+                        Object object = requestRpc.getResult();
+                        ClientHandler.waitingRPC.remove(requestRpc.getRequestId());
+                        return object;
                     }
                 }
         );
